@@ -61,7 +61,7 @@ Matrix Matrix::operator=(const Matrix& rhs)
 Matrix Matrix::operator*(const Matrix& rhs)
 {
   // square
-   assert(rhs.size.rows == rhs.size.cols);// == this->size.rows == this->size.cols);
+  assert(rhs.size.rows == rhs.size.cols);// == this->size.rows == this->size.cols);
   assert(this->size.rows == rhs.size.rows);
   assert(this->size.cols == rhs.size.cols);
 
@@ -79,6 +79,24 @@ Matrix Matrix::operator*(const Matrix& rhs)
   return result;
 }
 
+std::vector<int> Matrix::getRow(int row) const
+{
+  std::vector<int> row_data;
+  for(int col = 0; col < size.cols; col++)
+    row_data.push_back(data[row][col]);
+
+  return row_data;
+}
+
+std::vector<int> Matrix::getCol(int col) const
+{
+  std::vector<int> col_data;
+  for(int row = 0; row < size.rows; row++)
+    col_data.push_back(data[row][col]);
+
+  return col_data;
+}
+
 std::ostream& operator <<(std::ostream& stream, const Matrix& matrix)
 {
   for(int row = 0; row < matrix.size.rows; ++row){
@@ -94,4 +112,27 @@ std::ostream& operator <<(std::ostream& stream, const Size& size)
 {
   stream << size.rows << "," << size.cols;
   return stream;
+}
+
+MatrixCrossSection::MatrixCrossSection()
+{
+  row_id = col_id = -1;
+}
+
+MatrixCrossSection::~MatrixCrossSection()
+{
+}
+
+MatrixCrossSection MatrixCrossSection::operator=(const MatrixCrossSection& rhs)
+{
+  if (this == &rhs)      // Same object?
+    return *this;        // Yes, so skip assignment, and just return *this.
+
+  this->row_id   = rhs.row_id;
+  this->col_id   = rhs.col_id;
+
+  std::copy( rhs.row_data.begin(), rhs.row_data.end(), std::back_inserter( this->row_data ) );
+  std::copy( rhs.col_data.begin(), rhs.col_data.end(), std::back_inserter( this->col_data ) );
+
+  return *this;
 }
