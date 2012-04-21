@@ -14,18 +14,15 @@ Matrix::Matrix(const Size& size) :
   top_left(top_left),
   lower_right(lower_right)
 {
-  data = new int*[size.rows];
-  for (int i = 0; i < size.rows; ++i)
-    data[i] = new int[size.cols];
+  assert(size.rows == size.cols);
+
+  data.resize(size.rows);
+  for (int i = 0; i < data.size(); ++i)
+    data[i].resize(size.cols);
 }
 
 Matrix::~Matrix()
 {
-  for(int i = 0; i < size.rows; ++i){
-    delete[] data[i];
-  }
-
-  delete[] data;
 }
 
 Matrix Matrix::operator=(const Matrix& rhs)
@@ -33,25 +30,17 @@ Matrix Matrix::operator=(const Matrix& rhs)
   if (this == &rhs)      // Same object?
     return *this;        // Yes, so skip assignment, and just return *this.
 
-  // Deallocate data
-  if(this->size.rows < 0){
-
-    for(int i = 0; i < this->size.rows; ++i){
-      delete[] this->data[i];
-    }
-
-    delete[] this->data;
-  }
-
-
   // Reallocate and copy
-  this->size        = rhs.size;
-  this->top_left    = rhs.top_left;
-  this->lower_right = rhs.lower_right;
+  size        = rhs.size;
+  top_left    = rhs.top_left;
+  lower_right = rhs.lower_right;
 
-  this->data = new int*[this->size.rows];
-  for (int i = 0; i < this->size.rows; ++i)
-    this->data[i] = new int[this->size.cols];
+  data.clear();
+  data.resize(size.rows);
+  for (int i = 0; i < size.rows; ++i){
+    data[i].clear();
+    data[i].resize(size.cols);
+  }
 
   for (int row = 0; row < size.rows; ++row){
     for (int col = 0; col < size.cols; ++col){
@@ -66,7 +55,7 @@ Matrix Matrix::operator=(const Matrix& rhs)
 Matrix Matrix::operator*(const Matrix& rhs)
 {
   // square
-  assert(rhs.size.rows == rhs.size.cols);// == this->size.rows == this->size.cols);
+  assert(rhs.size.rows == rhs.size.cols);
   assert(this->size.rows == rhs.size.rows);
   assert(this->size.cols == rhs.size.cols);
 
@@ -86,11 +75,7 @@ Matrix Matrix::operator*(const Matrix& rhs)
 
 std::vector<int> Matrix::getRow(int row) const
 {
-  std::vector<int> row_data;
-  for(int col = 0; col < size.cols; col++)
-    row_data.push_back(data[row][col]);
-
-  return row_data;
+  return data[row];
 }
 
 std::vector<int> Matrix::getCol(int col) const
@@ -133,17 +118,17 @@ MatrixCrossSection MatrixCrossSection::operator=(const MatrixCrossSection& rhs)
   if (this == &rhs)      // Same object?
     return *this;        // Yes, so skip assignment, and just return *this.
 
-  this->row_id   = rhs.row_id;
-  this->col_id   = rhs.col_id;
+  row_id   = rhs.row_id;
+  col_id   = rhs.col_id;
 
   assert( rhs.row_data.size() == rhs.col_data.size() );
 
-  this->row_data.resize(rhs.row_data.size());
-  this->col_data.resize(rhs.col_data.size());
+  row_data.resize(rhs.row_data.size());
+  col_data.resize(rhs.col_data.size());
 
   for(int i = 0; i < rhs.row_data.size(); ++i){
-    std::copy( rhs.row_data[i].begin(), rhs.row_data[i].end(), std::back_inserter( this->row_data[i] ) );
-    std::copy( rhs.col_data[i].begin(), rhs.col_data[i].end(), std::back_inserter( this->col_data[i] ) );
+    std::copy( rhs.row_data[i].begin(), rhs.row_data[i].end(), std::back_inserter( row_data[i] ) );
+    std::copy( rhs.col_data[i].begin(), rhs.col_data[i].end(), std::back_inserter( col_data[i] ) );
   }
   return *this;
 }

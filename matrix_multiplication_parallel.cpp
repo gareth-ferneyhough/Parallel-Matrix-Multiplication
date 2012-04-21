@@ -19,7 +19,7 @@ using std::string;
 using std::cout;
 using std::endl;
 
-void runMaster(mpi::communicator, int size);
+void runMaster(mpi::communicator, int size, int grid_dimension);
 void runSlave(mpi::communicator);
 MatrixCrossSection getCrossSection(const Matrix& mat, int row_begin, int col_begin, int num_cols_and_rows);
 
@@ -32,23 +32,26 @@ int main(int argc, char* argv[])
   mpi::communicator world;
   const int my_rank = world.rank();
 
+  int grid_dimension = sqrt(world.size() -1);
+  assert( size % grid_dimension == 0);
+
 
   // Main Loop
-  if (my_rank == 0) runMaster(world, size);
+  if (my_rank == 0) runMaster(world, size, grid_dimension);
   else              runSlave(world);
 
   return 0;
 }
 
-void runMaster(mpi::communicator world, int size)
+void runMaster(mpi::communicator world, int size, int grid_dimension)
 {
   // Start timer and go.
   boost::chrono::system_clock::time_point start = boost::chrono::system_clock::now();
 
-  mpi::request reqs[1];
-
   // Send
-  Matrix A(Size(size, size));
+  Matrix      A(Size(size, size));
+  Matrix result(Size(size, size));
+
   for(int row = 0; row < A.size.rows; ++row){
     for(int col = 0; col < A.size.cols; ++col){
       A.data[row][col] = row +1 * col;
@@ -57,22 +60,39 @@ void runMaster(mpi::communicator world, int size)
   cout << A << endl;
   cout << "\nProduct:\n" << A*A << endl;
 
-  MatrixCrossSection cs = getCrossSection( A, 0, 0, 2);
-  reqs[0] = world.isend(1, 0, cs);
+  // Split matrix up and send to slaves
+  int slave_id = 1;
+  int sub_matrix_sizes = size / grid_dimension;
+
+  for(int i = 0; i < size; i += sub_matrix_sizes){
+    for(int j = 0; j < size; j += sub_matrix_sizes){
+      MatrixCrossSection cs = getCrossSection( A, i, j, sub_matrix_sizes);
+      world.isend(slave_id, 0, cs);
+      slave_id ++;
+    }
+  }
 
   // Recieve
-  // std::vector<int> returned;
-  // world.recv(1, 0, returned);
+  std::vector<Matrix> saved;
+  int num_slaves = world.size() -1;
+  mpi::request reqs[num_slaves];
+  
+  for(int i = 1; i <= num_slaves; ++i){
+    Matrix r;
+    world.recv(i, 0, r);
+    saved.push_back(r);
+  }
+  //mpi::wait_all(reqs, reqs + num_slaves);
 
-  // cout << "Recived: ";
-  // std::copy(returned.begin(), returned.end(), std::ostream_iterator<int>(cout, ","));
-  // cout << endl;
-
-  //  mpi::wait_all(reqs, reqs + 1);
   // Done
-
   boost::chrono::duration<double> sec = boost::chrono::system_clock::now() - start;
   cout << "took " << sec.count() << " seconds\n";
+
+  // Print Result
+  cout << "\nResult:\n";
+  for(int i = 0; i < saved.size(); ++i){
+    cout << saved[i] << endl;
+  }
 }
 
 void runSlave(mpi::communicator world)
@@ -81,19 +101,10 @@ void runSlave(mpi::communicator world)
   MatrixCrossSection cs;
   world.recv(0, 0, cs);
 
-  for(int i = 0; i < cs.row_data.size(); ++i){
-    cout << "\n\nRow " << cs.row_id + i << ":\n";
-    std::copy(cs.row_data[i].begin(), cs.row_data[i].end(), std::ostream_iterator<int>(cout, ","));
-
-    cout << "\nCol " << cs.col_id + i << ":\n";
-    std::copy(cs.col_data[i].begin(), cs.col_data[i].end(), std::ostream_iterator<int>(cout, ","));
-  }
-
   Matrix subMatrix(Size(cs.row_data.size(), cs.row_data.size()));
   cs.calculateVectorProduct(subMatrix);
-
-  cout << "\nSubMatrix:\n" << subMatrix;
-  cout << endl;
+  
+  world.send(0, 0, subMatrix);
 }
 
 MatrixCrossSection getCrossSection(const Matrix& mat, int row_begin, int col_begin, int num_cols_and_rows)

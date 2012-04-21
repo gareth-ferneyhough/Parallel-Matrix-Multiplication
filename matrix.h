@@ -19,6 +19,15 @@ class Index{
 
   int row;
   int col;
+
+  friend class boost::serialization::access;
+
+  template<class Archive>
+    void serialize(Archive & ar, const unsigned int version)
+    {
+      ar & row;
+      ar & col;
+    }
 };
 
 class Size{
@@ -39,6 +48,15 @@ class Size{
   int rows;
   int cols;
   friend std::ostream& operator<< (std::ostream& stream, const Size& size);
+
+  friend class boost::serialization::access;
+
+  template<class Archive>
+    void serialize(Archive & ar, const unsigned int version)
+    {
+      ar & rows;
+      ar & cols;
+    }
 };
 
 class Matrix{
@@ -53,12 +71,23 @@ class Matrix{
   std::vector<int> getCol(int col_id) const;
 
   Size size;
-  int** data;
+  std::vector<std::vector<int> > data;
   friend std::ostream& operator << (std::ostream& stream, const Matrix& matrix);
   
   // this is a hack to specify sub-matricies
   Index top_left;
   Index lower_right;
+
+  friend class boost::serialization::access;
+
+  template<class Archive>
+    void serialize(Archive & ar, const unsigned int version)
+    {
+      ar & size;
+      ar & data;
+      ar & top_left;
+      ar & lower_right;
+    }
 };
 
 class MatrixCrossSection{
