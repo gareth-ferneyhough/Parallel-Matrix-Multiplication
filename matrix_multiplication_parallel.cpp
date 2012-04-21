@@ -21,7 +21,7 @@ using std::endl;
 
 void runMaster(mpi::communicator, int size);
 void runSlave(mpi::communicator);
-MatrixCrossSection getCrossSection(const Matrix& mat, int row, int col);
+MatrixCrossSection getCrossSection(const Matrix& mat, int row_begin, int col_begin, int num_cols_and_rows);
 
 int main(int argc, char* argv[])
 {
@@ -55,8 +55,9 @@ void runMaster(mpi::communicator world, int size)
     }
   }
   cout << A << endl;
+  cout << "\nProduct:\n" << A*A << endl;
 
-  MatrixCrossSection cs = getCrossSection( A, 2, 3 );
+  MatrixCrossSection cs = getCrossSection( A, 0, 0, 2);
   reqs[0] = world.isend(1, 0, cs);
 
   // Recieve
@@ -69,6 +70,7 @@ void runMaster(mpi::communicator world, int size)
 
   //  mpi::wait_all(reqs, reqs + 1);
   // Done
+
   boost::chrono::duration<double> sec = boost::chrono::system_clock::now() - start;
   cout << "took " << sec.count() << " seconds\n";
 }
@@ -79,23 +81,31 @@ void runSlave(mpi::communicator world)
   MatrixCrossSection cs;
   world.recv(0, 0, cs);
 
-  cout << "Row " << cs.row_id << ":\n";
-  std::copy(cs.row_data.begin(), cs.row_data.end(), std::ostream_iterator<int>(cout, ","));
+  for(int i = 0; i < cs.row_data.size(); ++i){
+    cout << "\n\nRow " << cs.row_id + i << ":\n";
+    std::copy(cs.row_data[i].begin(), cs.row_data[i].end(), std::ostream_iterator<int>(cout, ","));
 
-  cout << "\nCol " << cs.col_id << ":\n";
-  std::copy(cs.col_data.begin(), cs.col_data.end(), std::ostream_iterator<int>(cout, ","));
+    cout << "\nCol " << cs.col_id + i << ":\n";
+    std::copy(cs.col_data[i].begin(), cs.col_data[i].end(), std::ostream_iterator<int>(cout, ","));
+  }
 
+  Matrix subMatrix(Size(cs.row_data.size(), cs.row_data.size()));
+  cs.calculateVectorProduct(subMatrix);
+
+  cout << "\nSubMatrix:\n" << subMatrix;
   cout << endl;
 }
 
-MatrixCrossSection getCrossSection(const Matrix& mat, int row, int col)
+MatrixCrossSection getCrossSection(const Matrix& mat, int row_begin, int col_begin, int num_cols_and_rows)
 {
   MatrixCrossSection cs;
-  cs.row_id = row;
-  cs.col_id = col;
-  cs.row_data = mat.getRow(row);
-  cs.col_data = mat.getCol(col);
+  cs.row_id = row_begin;
+  cs.col_id = col_begin;
 
+  for(int i = 0; i < num_cols_and_rows; ++i){
+    cs.row_data.push_back( mat.getRow(row_begin + i) );
+    cs.col_data.push_back( mat.getCol(col_begin + i) );
+  }
   return cs;
 }
 

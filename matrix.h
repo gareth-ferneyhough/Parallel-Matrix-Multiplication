@@ -2,10 +2,29 @@
 #include <vector>
 #include <ostream>
 
+class Index{
+ public:
+ Index(int row, int col) :
+    row(row),
+    col(col)
+    {}
+
+ Index operator=(const Index& rhs){
+    if (this != &rhs){
+      this->row = rhs.row;
+      this->col = rhs.col;
+    }
+    return *this;
+  }
+
+  int row;
+  int col;
+};
+
 class Size{
  public:
  Size(int rows, int cols) :
-  rows(rows),
+    rows(rows),
     cols(cols)
     {}
 
@@ -36,6 +55,10 @@ class Matrix{
   Size size;
   int** data;
   friend std::ostream& operator << (std::ostream& stream, const Matrix& matrix);
+  
+  // this is a hack to specify sub-matricies
+  Index top_left;
+  Index lower_right;
 };
 
 class MatrixCrossSection{
@@ -43,11 +66,12 @@ class MatrixCrossSection{
   MatrixCrossSection();
   ~MatrixCrossSection();
   MatrixCrossSection operator=(const MatrixCrossSection& rhs);
+  void calculateVectorProduct(Matrix& mat);
   
   int row_id;
   int col_id;
-  std::vector<int> row_data;
-  std::vector<int> col_data;
+  std::vector<std::vector<int> >row_data;
+  std::vector<std::vector<int> >col_data;
 
   friend class boost::serialization::access;
 
