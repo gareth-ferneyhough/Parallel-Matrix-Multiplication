@@ -35,7 +35,6 @@ int main(int argc, char* argv[])
   int grid_dimension = sqrt(world.size() -1);
   assert( size % grid_dimension == 0);
 
-
   // Main Loop
   if (my_rank == 0) runMaster(world, size, grid_dimension);
   else              runSlave(world);
@@ -57,8 +56,8 @@ void runMaster(mpi::communicator world, int size, int grid_dimension)
       A.data[row][col] = row +1 * col;
     }
   }
-  cout << A << endl;
-  cout << "\nProduct:\n" << A*A << endl;
+  //cout << A << endl;
+  //cout << "\nProduct:\n" << A*A << endl;
 
   // Split matrix up and send to slaves
   int slave_id = 1;
@@ -75,24 +74,21 @@ void runMaster(mpi::communicator world, int size, int grid_dimension)
   // Recieve
   std::vector<Matrix> saved;
   int num_slaves = world.size() -1;
-  mpi::request reqs[num_slaves];
   
   for(int i = 1; i <= num_slaves; ++i){
     Matrix r;
     world.recv(i, 0, r);
-    saved.push_back(r);
+    result.insertSubMatrix(r);
   }
-  //mpi::wait_all(reqs, reqs + num_slaves);
 
   // Done
   boost::chrono::duration<double> sec = boost::chrono::system_clock::now() - start;
   cout << "took " << sec.count() << " seconds\n";
 
   // Print Result
-  cout << "\nResult:\n";
-  for(int i = 0; i < saved.size(); ++i){
-    cout << saved[i] << endl;
-  }
+  //cout << "\nResult:\n" << result << endl;
+
+  assert ( result == A*A);
 }
 
 void runSlave(mpi::communicator world)

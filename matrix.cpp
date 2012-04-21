@@ -73,6 +73,11 @@ Matrix Matrix::operator*(const Matrix& rhs)
   return result;
 }
 
+bool Matrix::operator==(const Matrix& rhs)
+{
+  return data == rhs.data;
+}
+
 std::vector<int> Matrix::getRow(int row) const
 {
   return data[row];
@@ -85,6 +90,15 @@ std::vector<int> Matrix::getCol(int col) const
     col_data.push_back(data[row][col]);
 
   return col_data;
+}
+
+void Matrix::insertSubMatrix(const Matrix& sub_matrix)
+{
+  for(int i = 0; i < sub_matrix.size.rows; ++i){
+    for(int j = 0; j < sub_matrix.size.cols; ++j){
+      data[i + sub_matrix.top_left.row][j + sub_matrix.top_left.col] = sub_matrix.data[i][j];
+    }
+  }
 }
 
 std::ostream& operator <<(std::ostream& stream, const Matrix& matrix)
