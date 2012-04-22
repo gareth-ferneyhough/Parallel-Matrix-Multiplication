@@ -33,7 +33,8 @@ int main(int argc, char* argv[])
   const int my_rank = world.rank();
 
   int grid_dimension = sqrt(world.size() -1);
-  assert( size % grid_dimension == 0);
+  if (grid_dimension != 0)
+    assert( size % grid_dimension == 0);
 
   // Main Loop
   if (my_rank == 0) runMaster(world, size, grid_dimension);
@@ -53,32 +54,39 @@ void runMaster(mpi::communicator world, int size, int grid_dimension)
 
   for(int row = 0; row < A.size.rows; ++row){
     for(int col = 0; col < A.size.cols; ++col){
-      A.data[row][col] = row +1 * col;
+      A.data[row][col] = (row % 11) + (col % 11);
     }
   }
   //cout << A << endl;
   //cout << "\nProduct:\n" << A*A << endl;
 
-  // Split matrix up and send to slaves
-  int slave_id = 1;
-  int sub_matrix_sizes = size / grid_dimension;
+  // Do sequential
+  if (grid_dimension == 0)
+    result = A*A;
 
-  for(int i = 0; i < size; i += sub_matrix_sizes){
-    for(int j = 0; j < size; j += sub_matrix_sizes){
-      MatrixCrossSection cs = getCrossSection( A, i, j, sub_matrix_sizes);
-      world.isend(slave_id, 0, cs);
-      slave_id ++;
+  // Else parallel
+  else{
+    // Split matrix up and send to slaves
+    int slave_id = 1;
+    int sub_matrix_sizes = size / grid_dimension;
+
+    for(int i = 0; i < size; i += sub_matrix_sizes){
+      for(int j = 0; j < size; j += sub_matrix_sizes){
+        MatrixCrossSection cs = getCrossSection( A, i, j, sub_matrix_sizes);
+        world.send(slave_id, 0, cs);
+        slave_id ++;
+      }
     }
-  }
 
-  // Recieve
-  std::vector<Matrix> saved;
-  int num_slaves = world.size() -1;
-  
-  for(int i = 1; i <= num_slaves; ++i){
-    Matrix r;
-    world.recv(i, 0, r);
-    result.insertSubMatrix(r);
+    // Recieve
+    std::vector<Matrix> saved;
+    int num_slaves = world.size() -1;
+
+    for(int i = 1; i <= num_slaves; ++i){
+      Matrix r;
+      world.recv(i, 0, r);
+      result.insertSubMatrix(r);
+    }
   }
 
   // Done
@@ -99,7 +107,8 @@ void runSlave(mpi::communicator world)
 
   Matrix subMatrix(Size(cs.row_data.size(), cs.row_data.size()));
   cs.calculateVectorProduct(subMatrix);
-  
+  //subMatrix.data[0][0] = 234; test the assertion
+
   world.send(0, 0, subMatrix);
 }
 
