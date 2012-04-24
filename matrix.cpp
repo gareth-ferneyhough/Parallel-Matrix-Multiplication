@@ -54,7 +54,12 @@ Matrix Matrix::operator=(const Matrix& rhs)
 // Square for now
 Matrix Matrix::operator*(const Matrix& rhs)
 {
-  // square
+  // Note: this is slow. Look at the "square" method
+  // on how it should be done. We need to copy the
+  // matrix data from a 2D array into two contiguous arrays
+  // for data locality and caching. It will be 5 times faster.
+
+  // Make sure that both are square and same size.
   assert(rhs.size.rows == rhs.size.cols);
   assert(this->size.rows == rhs.size.rows);
   assert(this->size.cols == rhs.size.cols);
@@ -97,6 +102,37 @@ void Matrix::insertSubMatrix(const Matrix& sub_matrix)
   for(int i = 0; i < sub_matrix.size.rows; ++i){
     for(int j = 0; j < sub_matrix.size.cols; ++j){
       data[i + sub_matrix.top_left.row][j + sub_matrix.top_left.col] = sub_matrix.data[i][j];
+    }
+  }
+}
+
+void Matrix::square(Matrix& result)
+{
+  // Squares *this and places result in.... result!
+  assert(size.rows == result.size.cols);
+  assert(size.rows == result.size.rows);
+  assert(size.cols == result.size.cols);
+
+  // This may seem crazy to copy the internal data into 
+  // vectors, but it is necessary to achieve good data locality.
+  // Before this, when I was looping over the 2D array, it was
+  // five times slower than using two contiguos vectors.
+
+  std::vector<std::vector<int> > row_vector;
+  std::vector<std::vector<int> > col_vector;
+
+  // Copy *this.data into contiguous vectors for data locality
+  for(int i = 0; i < size.rows; ++i){
+    row_vector.push_back( getRow(i) );
+    col_vector.push_back( getCol(i) );
+  }
+  
+  // Square the matrix
+  for(int row = 0; row < size.rows; ++row){
+    for(int col = 0; col < size.cols; ++col){
+      for(int k = 0; k < size.rows; ++k){
+          result.data[row][col] += row_vector[row][k] * col_vector[col][k];
+      }
     }
   }
 }

@@ -62,7 +62,7 @@ void runMaster(mpi::communicator world, int size, int grid_dimension)
 
   // Do sequential
   if (grid_dimension == 0)
-    result = A*A;
+    A.square(result);
 
   // Else parallel
   else{
@@ -107,7 +107,6 @@ void runSlave(mpi::communicator world)
 
   Matrix subMatrix(Size(cs.row_data.size(), cs.row_data.size()));
   cs.calculateVectorProduct(subMatrix);
-  //subMatrix.data[0][0] = 234; test the assertion
 
   world.send(0, 0, subMatrix);
 }

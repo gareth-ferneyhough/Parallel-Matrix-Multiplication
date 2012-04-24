@@ -71,6 +71,7 @@ class Matrix{
   std::vector<int> getRow(int row_id) const;
   std::vector<int> getCol(int col_id) const;
   void insertSubMatrix(const Matrix& rhs);
+  void square(Matrix& result);
 
   Size size;
   std::vector<std::vector<int> > data;
