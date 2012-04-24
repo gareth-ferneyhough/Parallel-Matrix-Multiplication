@@ -1,5 +1,5 @@
 LIBS  = -lboost_system
-CFLAGS = -g -Wall -O3 -L /usr/local/lib
+CFLAGS = -g -Wall -O3 -L /home/garethf/scratch/usr/lib
 
 # Should be equivalent to your list of C files, if you don't build selectively
 SRC=$(wildcard *.cpp)

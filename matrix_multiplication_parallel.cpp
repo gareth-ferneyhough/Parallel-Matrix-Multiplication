@@ -91,12 +91,12 @@ void runMaster(mpi::communicator world, int size, int grid_dimension)
 
   // Done
   boost::chrono::duration<double> sec = boost::chrono::system_clock::now() - start;
-  cout << "took " << sec.count() << " seconds\n";
+  cout << sec.count() << endl;
 
   // Print Result
   //cout << "\nResult:\n" << result << endl;
 
-  assert ( result == A*A);
+  //assert ( result == A*A);
 }
 
 void runSlave(mpi::communicator world)
